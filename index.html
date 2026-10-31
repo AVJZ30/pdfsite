@@ -110,6 +110,7 @@ header{backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 82%,tra
 .pgl{text-align:center;font-size:.82rem;color:var(--g2);margin:0 0 34px}.pgl a{color:var(--r)}
 .ob{position:absolute;cursor:grab;touch-action:none;outline:1.5px dashed transparent;transition:outline-color .15s}.ob:hover{outline-color:rgba(220,38,38,.55)}.ob.sel{outline:2px solid var(--r)}
 .ob img{width:100%;height:100%;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.ob.textob{cursor:move;outline-offset:2px}.ob.textob textarea{display:block;width:100%;height:100%;resize:none;overflow:hidden;background:transparent;border:0;outline:0;padding:0;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:#111;cursor:text;touch-action:auto;box-sizing:border-box}.ob.textob .drag-handle{position:absolute;top:-9px;left:50%;transform:translateX(-50%);padding:2px 12px;border-radius:6px;background:#dc2626;color:white;font:11px Arial;cursor:grab;display:none;touch-action:none}.ob.textob.sel .drag-handle{display:block}.text-editor-controls{display:flex;flex-direction:column;gap:9px;padding:12px;border:1px solid var(--ln);border-radius:10px}.text-editor-controls[hidden]{display:none}.text-editor-row{display:flex;gap:8px}.text-editor-row button{min-width:42px;padding:8px;border:1px solid var(--ln);border-radius:7px;background:var(--card);color:var(--tx);cursor:pointer}.text-editor-row button.active{background:var(--r);color:white}
 .tb{position:absolute;top:-36px;left:0;display:none;gap:4px}.sel .tb{display:flex}
 .tb button{border:0;background:#fff;color:#111;box-shadow:0 2px 8px rgba(0,0,0,.28);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:1rem}.tb button:hover{background:var(--r)}
 .hd{display:none;position:absolute;right:-9px;bottom:-9px;width:18px;height:18px;border-radius:50%;background:var(--r);border:2px solid #fff;cursor:nwse-resize}.sel .hd{display:block}
@@ -149,7 +150,18 @@ header{backdrop-filter:blur(14px);background:color-mix(in srgb,var(--bg) 82%,tra
 <section class="view" id="v-img2pdf"><div class="tool wide"><a class="back" href="#inicio">← Volver al inicio</a><h2>Fotos a PDF</h2>
 <p>Tus fotos aparecen sobre hojas en blanco. Arrástralas para moverlas, usa el círculo de la esquina para ampliarla sin deformar, o los tiradores del centro para cambiar solo su ancho o su alto y verás el resultado al instante.</p>
 <div class="ed"><aside class="panel side" id="e-side">
-<button class="btn" id="e-add">+ Añadir fotos</button><button class="btn s" id="e-paste">Pegar imagen copiada</button><input type="file" id="e-in" accept="image/*" multiple hidden>
+<button class="btn" id="e-add">+ Añadir fotos</button><button class="btn s" id="e-textadd">+ Añadir texto</button>
+<div class="text-editor-controls" id="e-texttools" hidden>
+<b>Formato del texto seleccionado</b>
+<label>Fuente<select id="e-font"><option value="Arial">Arial</option><option value="Georgia">Georgia</option><option value="Times New Roman">Times New Roman</option><option value="Verdana">Verdana</option><option value="Courier New">Courier New</option></select></label>
+<label>Tamaño (pt)<input id="e-fontsize" type="number" min="8" max="72" value="16"></label>
+<div class="text-editor-row"><button type="button" id="e-bold" aria-label="Negrita" title="Negrita"><b>N</b></button><button type="button" id="e-italic" aria-label="Cursiva" title="Cursiva"><i>K</i></button></div>
+<label>Alineación<select id="e-align"><option value="left">Izquierda</option><option value="center">Centrado</option><option value="right">Derecha</option><option value="justify">Justificado</option></select></label>
+<label>Interlineado<select id="e-line"><option value="1">Sencillo</option><option value="1.15">1.15</option><option value="1.5">1.5</option><option value="2">Doble</option></select></label>
+<label>Color<input id="e-color" type="color" value="#111111"></label>
+<button class="btn s" type="button" id="e-textdelete">Eliminar cuadro de texto</button>
+<small>Haz clic sobre el texto para seleccionarlo y editarlo. Arrastra el borde del cuadro para moverlo.</small>
+</div><button class="btn s" id="e-paste">Pegar imagen copiada</button><input type="file" id="e-in" accept="image/*" multiple hidden>
 <label>Nombre del documento<input type="text" id="e-n" value="Mi documento"></label>
 <label>Tamaño de hoja<select id="e-s"><option value="a4">A4 — 210 × 297 mm</option><option value="letter">Carta — 216 × 279 mm</option><option value="legal">Oficio — 216 × 356 mm</option><option value="a5">A5 — 148 × 210 mm</option></select></label>
 <label>Orientación<select id="e-o"><option value="p">Vertical</option><option value="l">Horizontal</option></select></label>
@@ -4290,21 +4302,37 @@ const E={pages:[[]],sel:null,uid:0},M=28,QP=[[4.17,.92],[2.78,.8],[1.67,.55],[1,
 const dims=()=>{const[w,h]=SZ[$('#e-s').value];return $('#e-o').value==='l'?[h,w]:[w,h]};
 const sc=()=>Math.min(1,Math.max(220,$('#pages').clientWidth-6)/dims()[0]);
 const find=id=>{for(let p=0;p<E.pages.length;p++){const it=E.pages[p].find(o=>o.id===id);if(it)return[it,p]}return[]};
-function clamp(it,resize){const[PW,PH]=dims();if(resize==='w')it.w=Math.min(it.w,PW-it.x);else if(resize==='h')it.h=Math.min(it.h,PH-it.y);else if(resize){if(it.x+it.w>PW){it.w=PW-it.x;it.h=it.w*it.r}if(it.y+it.h>PH){it.h=PH-it.y;it.w=it.h/it.r}}
+function clamp(it,resize){const[PW,PH]=dims();if(it.type==='text'){it.w=Math.min(Math.max(45,it.w),PW);it.h=Math.min(Math.max(22,it.h),PH);it.x=Math.max(0,Math.min(it.x,PW-it.w));it.y=Math.max(0,Math.min(it.y,PH-it.h));return}if(resize==='w')it.w=Math.min(it.w,PW-it.x);else if(resize==='h')it.h=Math.min(it.h,PH-it.y);else if(resize){if(it.x+it.w>PW){it.w=PW-it.x;it.h=it.w*it.r}if(it.y+it.h>PH){it.h=PH-it.y;it.w=it.h/it.r}}
  else{if(it.w>PW){it.w=PW-2*M;it.h=it.w*it.r}if(it.h>PH){it.h=PH-2*M;it.w=it.h/it.r}it.x=Math.max(0,Math.min(it.x,PW-it.w));it.y=Math.max(0,Math.min(it.y,PH-it.h))}}
 const fits=(pg,x,y,w,h,PW,PH)=>x+w<=PW-M+.1&&y+h<=PH-M+.1&&pg.every(o=>x+w<=o.x||o.x+o.w<=x||y+h<=o.y||o.y+o.h<=y);
 function place(it){const[PW,PH]=dims();
  for(let p=0;p<E.pages.length;p++)for(let y=M;y+it.h<=PH-M;y+=8)for(let x=M;x+it.w<=PW-M;x+=8)if(fits(E.pages[p],x,y,it.w,it.h,PW,PH)){it.x=x;it.y=y;E.pages[p].push(it);return}
  E.pages.push([]);it.x=M;it.y=M;E.pages[E.pages.length-1].push(it)}
 const nodes=new Map();
+function textSelected(){const [it]=find(E.sel);return it&&it.type==='text'?it:null}
+function syncTextTools(){const it=textSelected(),box=$('#e-texttools');box.hidden=!it;if(!it)return;
+ const vals={'e-font':it.font,'e-fontsize':it.size,'e-align':it.align,'e-line':String(it.line),'e-color':it.color};for(const [id,v] of Object.entries(vals))$('#'+id).value=v;
+ $('#e-bold').classList.toggle('active',it.bold);$('#e-italic').classList.toggle('active',it.italic)}
+function applyText(changes){const it=textSelected();if(!it)return;Object.assign(it,changes);render();const ta=nodes.get(it.id)?.querySelector('textarea');if(ta)ta.focus()}
+$('#e-textadd').onclick=()=>{const[PW,PH]=dims(),it={id:++E.uid,type:'text',text:'Escribe aquí...',x:M,y:M,w:Math.min(250,PW-2*M),h:75,font:'Arial',size:16,bold:false,italic:false,align:'left',line:1.15,color:'#111111'};place(it);E.sel=it.id;render();const ta=nodes.get(it.id)?.querySelector('textarea');if(ta){ta.focus();ta.select()}};
+for(const [id,key,conv] of [['e-font','font',v=>v],['e-fontsize','size',v=>Math.max(8,Math.min(72,+v||16))],['e-align','align',v=>v],['e-line','line',v=>+v],['e-color','color',v=>v]])$('#'+id).addEventListener('change',e=>applyText({[key]:conv(e.target.value)}));
+$('#e-bold').onclick=()=>{const it=textSelected();if(it)applyText({bold:!it.bold})};$('#e-italic').onclick=()=>{const it=textSelected();if(it)applyText({italic:!it.italic})};
+$('#e-textdelete').onclick=()=>{const it=textSelected();if(!it)return;const[,p]=find(it.id);E.pages[p].splice(E.pages[p].indexOf(it),1);E.sel=null;render()};
+function decorateText(ta,it,k){ta.style.fontFamily=it.font;ta.style.fontSize=it.size*k+'px';ta.style.fontWeight=it.bold?'bold':'normal';ta.style.fontStyle=it.italic?'italic':'normal';ta.style.textAlign=it.align;ta.style.lineHeight=String(it.line);ta.style.color=it.color;ta.value=it.text;ta.oninput=()=>{it.text=ta.value};ta.onpointerdown=e=>e.stopPropagation();ta.onclick=()=>{E.sel=it.id;$('.ob').forEach(el=>el.classList.toggle('sel',+el.dataset.id===it.id));syncTextTools()}}
+async function textImage(it){const scale=3,c=document.createElement('canvas'),ctx=c.getContext('2d');c.width=Math.max(2,Math.ceil(it.w*scale));c.height=Math.max(2,Math.ceil(it.h*scale));ctx.scale(scale,scale);ctx.fillStyle=it.color;ctx.font=(it.italic?'italic ':'')+(it.bold?'bold ':'')+it.size+'px "'+it.font+'"';ctx.textBaseline='top';
+ const lineH=it.size*it.line,lines=[];for(const para of it.text.replace(/\r/g,'').split('\n')){let line='';for(const word of para.split(/(\s+)/)){if(ctx.measureText(line+word).width>it.w&&line){lines.push(line);line=word.trimStart()}else line+=word}lines.push(line)}
+ for(let n=0;n<lines.length&&n*lineH<it.h;n++){let line=lines[n],y=n*lineH,w=ctx.measureText(line).width,x=it.align==='center'?(it.w-w)/2:it.align==='right'?it.w-w:0;
+  if(it.align==='justify'&&n<lines.length-1&&line.trim().includes(' ')){const parts=line.trim().split(/\s+/),sum=parts.reduce((v,p)=>v+ctx.measureText(p).width,0),gap=(it.w-sum)/Math.max(1,parts.length-1);let xx=0;parts.forEach(p=>{ctx.fillText(p,xx,y);xx+=ctx.measureText(p).width+gap})}else ctx.fillText(line,Math.max(0,x),y)}
+ return new Uint8Array(await new Promise(resolve=>c.toBlob(b=>b.arrayBuffer().then(resolve),'image/png')))}
+
 function render(){const[PW,PH]=dims(),k=sc(),n=E.pages.length,all=E.pages.flat().length,live=new Set(),fr=document.createDocumentFragment();
  E.pages.forEach((pg,pi)=>{const d=document.createElement('div');d.className='pg';d.dataset.p=pi;d.style.width=PW*k+'px';d.style.height=PH*k+'px';
-  pg.forEach(it=>{live.add(it.id);let el=nodes.get(it.id);if(!el){el=document.createElement('div');el.className='ob';el.dataset.id=it.id;el.innerHTML='<img alt="" draggable="false"><div class="tb"><button data-a="rot" title="Girar 90°">⟳</button><button data-a="del" title="Eliminar">✕</button></div><i class="hd" title="Cambiar tamaño"></i><i class="hr" title="Ancho"></i><i class="hb" title="Alto"></i>';nodes.set(it.id,el)}
-   const im=el.firstChild;if(im.getAttribute('src')!==it.url)im.src=it.url;el.classList.toggle('sel',it.id===E.sel);Object.assign(el.style,{left:it.x*k+'px',top:it.y*k+'px',width:it.w*k+'px',height:it.h*k+'px'});d.appendChild(el)});
+  pg.forEach(it=>{live.add(it.id);let el=nodes.get(it.id);if(!el){el=document.createElement('div');el.className='ob'+(it.type==='text'?' textob':'');el.dataset.id=it.id;el.innerHTML=it.type==='text'?'<textarea spellcheck="true" aria-label="Texto editable"></textarea><span class="drag-handle">Mover</span><div class="tb"><button data-a="del" title="Eliminar">✕</button></div><i class="hd" title="Cambiar tamaño"></i><i class="hr" title="Ancho"></i><i class="hb" title="Alto"></i>':'<img alt="" draggable="false"><div class="tb"><button data-a="rot" title="Girar 90°">⟳</button><button data-a="del" title="Eliminar">✕</button></div><i class="hd" title="Cambiar tamaño"></i><i class="hr" title="Ancho"></i><i class="hb" title="Alto"></i>';nodes.set(it.id,el)}
+   if(it.type==='text')decorateText(el.querySelector('textarea'),it,k);else{const im=el.firstChild;if(im.getAttribute('src')!==it.url)im.src=it.url}el.classList.toggle('sel',it.id===E.sel);Object.assign(el.style,{left:it.x*k+'px',top:it.y*k+'px',width:it.w*k+'px',height:it.h*k+'px'});d.appendChild(el)});
   fr.appendChild(d);const l=document.createElement('div');l.className='pgl';l.innerHTML=`Hoja ${pi+1} de ${n}${n>1?` · <a href="#" data-a="delp" data-p="${pi}">Quitar hoja</a>`:''}`;fr.appendChild(l)});
  const ap=document.createElement('div');ap.style.cssText='text-align:center;margin-bottom:40px';ap.innerHTML='<button class="btn s" data-a="addp">+ Añadir hoja</button>';fr.appendChild(ap);
  $('#pages').replaceChildren(fr);[...nodes.keys()].forEach(id=>{if(!live.has(id))nodes.delete(id)});
- $('#e-info').textContent=all?`${all} foto${all>1?'s':''} · ${n} hoja${n>1?'s':''}. Toca una foto para editarla.`:'Añade fotos para empezar: arrástralas aquí, usa el botón o pega con Ctrl+V.'}
+ $('#e-info').textContent=all?`${all} elemento${all>1?'s':''} · ${n} hoja${n>1?'s':''}. Selecciona una foto o texto para editarlo.`:'Añade fotos o texto para empezar.';syncTextTools()}
 async function addFiles(files){const[PW,PH]=dims();let bad=0;
  for(const f of files){if(!f.type.startsWith('image/'))continue;try{const b=await createImageBitmap(f),r=b.height/b.width;b.close&&b.close();let w=(PW-2*M)*.5,h=w*r;if(h>(PH-2*M)*.5){h=(PH-2*M)*.5;w=h/r}
   const it={id:++E.uid,f,url:URL.createObjectURL(f),w,h,r};place(it);render()}catch(e){bad++}}
@@ -4315,11 +4343,11 @@ const pgs=$('#pages');
 pgs.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;e.preventDefault();const a=b.dataset.a;
  if(a==='addp'){E.pages.push([]);render();return}
  if(a==='delp'){const p=+b.dataset.p,mv=E.pages.splice(p,1)[0];if(!E.pages.length)E.pages=[[]];mv.forEach(it=>{clamp(it);place(it)});E.sel=null;render();return}
- const[it,p]=find(E.sel);if(!it)return;if(a==='del'){E.pages[p].splice(E.pages[p].indexOf(it),1);URL.revokeObjectURL(it.url);E.sel=null;render()}else if(a==='rot')rotate(it)});
+ const[it,p]=find(E.sel);if(!it)return;if(a==='del'){E.pages[p].splice(E.pages[p].indexOf(it),1);if(it.url)URL.revokeObjectURL(it.url);E.sel=null;render()}else if(a==='rot')rotate(it)});
 pgs.addEventListener('pointerdown',e=>{const el=e.target.closest('.ob');
  if(!el){if(E.sel){E.sel=null;$$('.ob.sel').forEach(n=>n.classList.remove('sel'))}return}
- if(e.target.closest('.tb'))return;const id=+el.dataset.id,[it,pi]=find(id),k=sc(),sx=e.clientX,sy=e.clientY,o={x:it.x,y:it.y,w:it.w,h:it.h},rs=e.target.closest('.hd')?'c':e.target.closest('.hr')?'w':e.target.closest('.hb')?'h':'';
- E.sel=id;pgs.classList.add('dragging');$$('.ob').forEach(n=>n.classList.toggle('sel',n===el));const arr=E.pages[pi];arr.push(arr.splice(arr.indexOf(it),1)[0]);el.parentNode.appendChild(el);el.setPointerCapture(e.pointerId);e.preventDefault();
+ if(e.target.closest('.tb'))return;if(e.target.closest('textarea'))return;const id=+el.dataset.id,[it,pi]=find(id),k=sc(),sx=e.clientX,sy=e.clientY,o={x:it.x,y:it.y,w:it.w,h:it.h},rs=e.target.closest('.hd')?'c':e.target.closest('.hr')?'w':e.target.closest('.hb')?'h':'';
+ E.sel=id;pgs.classList.add('dragging');$$('.ob').forEach(n=>n.classList.toggle('sel',n===el));const arr=E.pages[pi];arr.push(arr.splice(arr.indexOf(it),1)[0]);el.parentNode.appendChild(el);el.setPointerCapture(e.pointerId);e.preventDefault();syncTextTools();
  const mv=ev=>{const dx=(ev.clientX-sx)/k,dy=(ev.clientY-sy)/k;
   if(rs){if(rs==='h')it.h=Math.max(30,o.h+dy);else{it.w=Math.max(30,o.w+dx);if(rs==='c')it.h=it.w*(o.h/o.w)}el.style.width=it.w*k+'px';el.style.height=it.h*k+'px'}else{it.x=o.x+dx;it.y=o.y+dy;el.style.left=it.x*k+'px';el.style.top=it.y*k+'px'}};
  const up=ev=>{pgs.classList.remove('dragging');el.removeEventListener('pointermove',mv);el.removeEventListener('pointerup',up);el.removeEventListener('pointercancel',up);
@@ -4328,14 +4356,14 @@ pgs.addEventListener('pointerdown',e=>{const el=e.target.closest('.ob');
   clamp(it,rs);it.r=it.h/it.w;render()};
  el.addEventListener('pointermove',mv);el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up)});
 ['e-s','e-o'].forEach(i=>$('#'+i).onchange=()=>{E.pages.flat().forEach(o=>clamp(o));render()});
-addEventListener('paste',e=>{if(!$('#v-img2pdf').classList.contains('on'))return;const fs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();addFiles(fs)}});
+addEventListener('paste',e=>{if(!$('#v-img2pdf').classList.contains('on'))return;if(e.target.closest('textarea,input,[contenteditable]'))return;const fs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();addFiles(fs)}});
 $('#e-paste').onclick=async()=>{try{const fs=[];for(const it of await navigator.clipboard.read()){const t=it.types.find(t=>t.startsWith('image/'));if(t)fs.push(new File([await it.getType(t)],'pegada-'+Date.now()+'.png',{type:t}))}fs.length?addFiles(fs):alert('No hay ninguna imagen copiada.')}catch(e){alert('Tu navegador no permite leer el portapapeles desde el botón. Pulsa Ctrl+V (o ⌘+V) con esta página abierta.')}};
 $('#e-add').onclick=()=>$('#e-in').click();$('#e-in').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};dz($('.ed'),addFiles);
 addEventListener('resize',()=>{if($('#v-img2pdf').classList.contains('on'))render()});
-async function exportPdf(prog){const all=E.pages.flat().length;if(!all)throw Error('Añade al menos una foto.');
+async function exportPdf(prog){const all=E.pages.flat().length;if(!all)throw Error('Añade al menos una foto o un texto.');
  const[PW,PH]=dims(),[ppp,q]=QP[+$('#e-p').value],name=clean($('#e-n').value),doc=await PDFLib.PDFDocument.create();let d=0,orig=0;
  for(const pg of E.pages){if(!pg.length)continue;const p=doc.addPage([PW,PH]);
-  for(const it of pg){const b=await createImageBitmap(it.f),tw=Math.max(1,Math.min(b.width,Math.round(it.w*ppp))),th=Math.max(1,Math.round(tw*it.h/it.w)),c=document.createElement('canvas');c.width=tw;c.height=th;
+  for(const it of pg){if(it.type==='text'){if(it.text.trim()){const png=await doc.embedPng(await textImage(it));p.drawImage(png,{x:it.x,y:PH-it.y-it.h,width:it.w,height:it.h})}d++;prog(d/all,`Elemento ${d} de ${all}`);continue}const b=await createImageBitmap(it.f),tw=Math.max(1,Math.min(b.width,Math.round(it.w*ppp))),th=Math.max(1,Math.round(tw*it.h/it.w)),c=document.createElement('canvas');c.width=tw;c.height=th;
    const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,tw,th);x.drawImage(b,0,0,tw,th);b.close&&b.close();const im=await doc.embedJpg(await(await toBlob(c,q)).arrayBuffer());c.width=c.height=0;
    p.drawImage(im,{x:it.x,y:PH-it.y-it.h,width:it.w,height:it.h});orig+=it.f.size;d++;prog(d/all,`Foto ${d} de ${all}`)}}
  doc.setTitle(name);return{bytes:await doc.save(),name:name+'.pdf',pages:doc.getPageCount(),orig}}
